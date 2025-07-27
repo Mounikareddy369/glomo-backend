@@ -7,37 +7,47 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// MongoDB connection
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+// ✅ Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ Connected to MongoDB"))
-  .catch(err => console.error("❌ MongoDB Error:", err));
+  .then(() => console.log('✅ Connected to MongoDB'))
+  .catch(err => console.error('❌ MongoDB Error:', err));
 
-// Order Schema
-const OrderSchema = new mongoose.Schema({
+// ✅ Define order schema
+const orderSchema = new mongoose.Schema({
   name: String,
   address: String,
   phone: String,
   items: Array,
   payment: String,
-  createdAt: {
-    type: Date,
-    default: Date.now
+}, { timestamps: true });
+
+const Order = mongoose.model('Order', orderSchema);
+
+// ✅ POST route to place order
+app.post('/api/orders', async (req, res) => {
+  try {
+    const order = new Order(req.body);
+    await order.save();
+    res.status(201).json({ message: 'Order placed successfully!' });
+  } catch (error) {
+    console.error('Error placing order:', error);
+    res.status(500).json({ error: 'Something went wrong.' });
   }
 });
-const Order = mongoose.model('Order', OrderSchema);
 
-// Get all orders (admin panel)
+// ✅ GET route to view all orders
 app.get('/api/orders', async (req, res) => {
-  const orders = await Order.find().sort({ createdAt: -1 });
-  res.json(orders);
+  try {
+    const orders = await Order.find().sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    res.status(500).json({ error: 'Unable to fetch orders.' });
+  }
 });
 
-
-const PORT = 5000;
+// ✅ Start server
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
